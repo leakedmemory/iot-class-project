@@ -1,0 +1,4 @@
+face_recognition/evaluation_images/
+face_recognition/data/
+face_recognition/training_checkpoints/
+face_recognition/*model*.h5
