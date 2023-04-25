@@ -1,0 +1,7 @@
+__pycache__/
+.ipynb_checkpoints/
+
+evaluation_images/
+data/
+training_checkpoints/
+*model*.h5
