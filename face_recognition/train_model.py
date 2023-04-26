@@ -33,14 +33,14 @@ def main():
     custom_objects = {"L1Dist": L1Dist}
 
     locate_gpus_and_config_if_found()
-    create_directories_if_needed()
+    check_for_anchor_and_positives()
     donwload_negatives_if_needed()
 
     preprocessed_data = preprocess_data()
     data_to_train, data_for_tests = take_data_sample(preprocessed_data)
 
     embedding = make_embedding()
-    model = load_or_make_model(custom_objects, embedding)
+    model = load_model_if_found_or_make_new(custom_objects, embedding)
     optimizer = keras.optimizers.Adam(1e-4)
 
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
@@ -57,22 +57,21 @@ def locate_gpus_and_config_if_found():
         tf.config.experimental.set_memory_growth(gpu, True)
 
 
-def create_directories_if_needed():
-    anc_path = os.getenv("ANC_PATH")
-    pos_path = os.getenv("POS_PATH")
-    neg_path = os.getenv("NEG_PATH")
+def check_for_anchor_and_positives():
+    print("\nChecking for 'anchor/' and 'positive/' directories...")
+    anc = os.getenv("ANCHOR_PATH")
+    pos = os.getenv("POSITIVE_PATH")
 
-    if not (os.path.isdir(anc_path) and os.path.isdir(pos_path) and os.path.isdir(neg_path)):
-        print("\nSOME DATA STORAGE WAS NOT FOUND: creating missing directories...")
-        os.makedirs(anc_path, exist_ok=True)
-        os.makedirs(pos_path, exist_ok=True)
-        os.makedirs(neg_path, exist_ok=True)
-    else:
-        print("\nDATA STORAGE FOUND: skipping directories creation...")
+    if os.path.isdir(anc) and os.path.isdir(pos):
+        if len(os.listdir(anc)) > 0 and len(os.listdir(pos)) > 0:
+            return
+
+    raise FileNotFoundError("'anchor/' and 'positive/' either do not exist or are empty")
 
 
 def donwload_negatives_if_needed():
-    if len(os.listdir(os.getenv("NEG_PATH"))) > 0:
+    neg = os.getenv("NEGATIVE_PATH")
+    if os.path.isdir(neg):
         print("\nNEGATIVE DATASET FOUND: loading it...")
         return
 
@@ -80,17 +79,20 @@ def donwload_negatives_if_needed():
     ds_compressed_path = "lfw.tgz"
     ds_directory_path = "lfw"
 
-    # download and extract Labelled Faces in the Wild dataset
+    os.makedirs(os.makedirs(neg), exist_ok=True)
+
+    # download dataset
     urllib.request.urlretrieve("http://vis-www.cs.umass.edu/lfw/lfw.tgz", ds_compressed_path)
 
+    # extract dataset
     with tarfile.open(ds_compressed_path) as file:
         file.extractall()
 
-    # move dataset images to the `NEG_PATH` directory
+    # move dataset's images to the `NEGATIVE_PATH` directory
     for directory in os.listdir(ds_directory_path):
         for file in os.listdir(os.path.join(ds_directory_path, directory)):
             ex_path = os.path.join(ds_directory_path, directory, file)
-            new_path = os.path.join(os.getenv("NEG_PATH"), file)
+            new_path = os.path.join(neg)
             os.replace(ex_path, new_path)
 
     # remove dataset compressed file and directory
@@ -98,7 +100,7 @@ def donwload_negatives_if_needed():
     os.remove(ds_compressed_path)
 
 
-def load_or_make_model(custom_objects, embedding):
+def load_model_if_found_or_make_new(custom_objects, embedding):
     if os.path.isfile(MODEL_PATH):
         print("\nMODEL FOUND: loading it...")
         return load_model(custom_objects)
@@ -147,9 +149,9 @@ def make_embedding():
 
 def preprocess_data():
     print("\nPreprocessing data...")
-    anchor = tf.data.Dataset.list_files(os.path.join(os.getenv("ANC_PATH"), "*.jpg")).take(400)
-    positive = tf.data.Dataset.list_files(os.path.join(os.getenv("POS_PATH"), "*.jpg")).take(400)
-    negative = tf.data.Dataset.list_files(os.path.join(os.getenv("NEG_PATH"), "*.jpg")).take(400)
+    anchor = tf.data.Dataset.list_files(os.path.join(os.getenv("ANCHOR_PATH"), "*.jpg")).take(400)
+    positive = tf.data.Dataset.list_files(os.path.join(os.getenv("POSITIVE_PATH"), "*.jpg")).take(400)
+    negative = tf.data.Dataset.list_files(os.path.join(os.getenv("NEGATIVE_PATH"), "*.jpg")).take(400)
 
     positives = tf.data.Dataset.zip((anchor, positive, tf.data.Dataset.from_tensor_slices(tf.ones(len(anchor)))))
     negatives = tf.data.Dataset.zip((anchor, negative, tf.data.Dataset.from_tensor_slices(tf.zeros(len(anchor)))))
