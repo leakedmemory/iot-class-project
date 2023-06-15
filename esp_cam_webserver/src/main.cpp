@@ -2,8 +2,8 @@
 #include "WifiCam.hpp"
 #include <WiFi.h>
 
-static const char* WIFI_SSID = "-----";
-static const char* WIFI_PASS = "-----";
+static const char* WIFI_SSID = "----";
+static const char* WIFI_PASS = "----";
 
 esp32cam::Resolution initialResolution;
 
@@ -15,7 +15,6 @@ setup()
   Serial.begin(115200);
   Serial.println();
   delay(2000);
-  pinMode(4, OUTPUT);
 
   WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
@@ -26,7 +25,7 @@ setup()
     ESP.restart();
   }
   Serial.println("WiFi connected");
-  digitalWrite(4, HIGH);
+
   {
     using namespace esp32cam;
 

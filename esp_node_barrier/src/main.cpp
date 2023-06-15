@@ -4,37 +4,35 @@
 #include <LiquidCrystal.h>
 #include <ArduinoJson.h>
 
-const char* ssid = "brisa-2557393";
-const char* password =  "q2rl6shg";
-const char* mqttServer = "192.168.1.6";
+const char* ssid = "------";
+const char* password =  "------";
+const char* mqttServer = "------";
 const int mqttPort = 1883;
 const char* mqttUser = "ifpb";
 const char* mqttPassword = "ifpb";
+
 #define SOUND_SPEED 0.034
 #define CM_TO_INCH 0.393701
+
 const int trigPin = 5;
 const int echoPin = 18;
+
 bool allow = true;
-Servo myservo;
-LiquidCrystal lcd(32, 27, 21, 17, 16, 4);
 long duration;
 float distanceCm;
+
+Servo myservo;
+LiquidCrystal lcd(32, 27, 21, 17, 16, 4);
 WiFiClient espClient;
 PubSubClient client(espClient);
-// RS = 32
-// E = 27
-// D4 = 21
-// D5 = 17
-// D6 = 16
-// D7 = 4
 
 
 void openBarrier(const char* name) {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("ACESSO LIBERADO!");
-  // lcd.setCursor(0, 1);
-  // lcd.print(name);
+  lcd.setCursor(0, 1);
+  lcd.print(name);
 
   digitalWrite(22, LOW);
   digitalWrite(19, HIGH);
